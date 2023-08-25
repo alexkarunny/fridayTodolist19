@@ -1,8 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { appActions } from "app/app.reducer";
 import { authAPI, LoginParamsType } from "features/auth/auth.api";
 import { clearTasksAndTodolists } from "common/actions";
-import { createAppAsyncThunk, handleServerAppError, handleServerNetworkError, thunkTryCatch } from "common/utils";
+import { createAppAsyncThunk, handleServerAppError, thunkTryCatch } from "common/utils";
+import { appActions } from "app/app.reducer";
 
 const slice = createSlice({
   name: "auth",
@@ -15,7 +15,7 @@ const slice = createSlice({
       .addCase(authThunks.login.fulfilled, (state, action) => {
         state.isLoggedIn = action.payload.isLoggedIn;
       })
-      .addCase(authThunks.logout.fulfilled, (state, action) => {
+      .addCase(authThunks.logout.fulfilled, (state) => {
         state.isLoggedIn = false;
       })
       .addCase(authThunks.initializeApp.fulfilled, (state, action) => {
@@ -42,37 +42,28 @@ const login = createAppAsyncThunk<{ isLoggedIn: boolean }, LoginParamsType>("aut
 
 const logout = createAppAsyncThunk<undefined, undefined>("auth/logout", async (_, thunkAPI) => {
   const { dispatch, rejectWithValue } = thunkAPI;
-  try {
-    dispatch(appActions.setAppStatus({ status: "loading" }));
+  return thunkTryCatch(thunkAPI, async () => {
     const res = await authAPI.logout();
     if (res.data.resultCode === 0) {
       dispatch(clearTasksAndTodolists());
-      dispatch(appActions.setAppStatus({ status: "succeeded" }));
     } else {
       handleServerAppError(res.data, dispatch);
       return rejectWithValue(null);
     }
-  } catch (e) {
-    handleServerNetworkError(e, dispatch);
-    return rejectWithValue(null);
-  }
+  });
 });
 
 const initializeApp = createAppAsyncThunk<{ isLoggedIn: boolean }, undefined>("app/initialize", async (_, thunkAPI) => {
   const { dispatch, rejectWithValue } = thunkAPI;
-  try {
+  return thunkTryCatch(thunkAPI, async () => {
     const res = await authAPI.me();
+    dispatch(appActions.setAppInitialized({ isInitialized: true }));
     if (res.data.resultCode === 0) {
       return { isLoggedIn: true };
     } else {
       return rejectWithValue(null);
     }
-  } catch (e) {
-    handleServerNetworkError(e, dispatch);
-    return rejectWithValue(null);
-  } finally {
-    dispatch(appActions.setAppInitialized({ isInitialized: true }));
-  }
+  });
 });
 
 export const authReducer = slice.reducer;

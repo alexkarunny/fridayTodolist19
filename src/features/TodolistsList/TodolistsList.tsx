@@ -6,7 +6,7 @@ import { Grid, Paper } from "@mui/material";
 import { AddItemForm } from "common/components";
 import { Todolist } from "./Todolist/Todolist";
 import { Navigate } from "react-router-dom";
-import { useAppDispatch } from "common/hooks";
+import { useActions } from "common/hooks";
 import { selectIsLoggedIn } from "features/auth/auth.selectors";
 import { selectTasks } from "features/TodolistsList/tasks.selectors";
 import { selectTodolists } from "features/TodolistsList/todolists.selectors";
@@ -17,49 +17,48 @@ export const TodolistsList = () => {
   const tasks = useSelector(selectTasks);
   const isLoggedIn = useSelector(selectIsLoggedIn);
 
-  const dispatch = useAppDispatch();
+  const { fetchTodolists, removeTodolist, addTodolist, changeTodolistTitle } = useActions(todolistsThunks);
+  const { changeTodolistFilter } = useActions(todolistsActions);
+  const { removeTask, addTask, updateTask } = useActions(tasksThunks);
 
   useEffect(() => {
     if (!isLoggedIn) {
       return;
     }
-    dispatch(todolistsThunks.fetchTodolists());
+    fetchTodolists();
   }, []);
 
-  const removeTask = useCallback(function (taskId: string, todolistId: string) {
-    dispatch(tasksThunks.removeTask({ taskId, todolistId }));
+  const removeTaskCallback = useCallback(function (taskId: string, todolistId: string) {
+    removeTask({ taskId, todolistId });
   }, []);
 
-  const addTask = useCallback(function (title: string, todolistId: string) {
-    dispatch(tasksThunks.addTask({ title, todolistId }));
+  const addTaskCallback = useCallback(function (title: string, todolistId: string) {
+    addTask({ title, todolistId });
   }, []);
 
-  const changeStatus = useCallback(function (taskId: string, status: TaskStatuses, todolistId: string) {
-    dispatch(tasksThunks.updateTask({ taskId, domainModel: { status }, todolistId }));
+  const changeStatusCallback = useCallback(function (taskId: string, status: TaskStatuses, todolistId: string) {
+    updateTask({ taskId, domainModel: { status }, todolistId });
   }, []);
 
-  const changeTaskTitle = useCallback(function (taskId: string, title: string, todolistId: string) {
-    dispatch(tasksThunks.updateTask({ taskId, domainModel: { title }, todolistId }));
+  const changeTaskTitleCallback = useCallback(function (taskId: string, title: string, todolistId: string) {
+    updateTask({ taskId, domainModel: { title }, todolistId });
   }, []);
 
-  const changeFilter = useCallback(function (filter: FilterValuesType, id: string) {
-    dispatch(todolistsActions.changeTodolistFilter({ id, filter }));
+  const changeFilterCallback = useCallback(function (filter: FilterValuesType, id: string) {
+    changeTodolistFilter({ id, filter });
   }, []);
 
-  const removeTodolist = useCallback(function (id: string) {
-    dispatch(todolistsThunks.removeTodolist(id));
+  const removeTodolistCallback = useCallback(function (id: string) {
+    removeTodolist(id);
   }, []);
 
-  const changeTodolistTitle = useCallback(function (id: string, title: string) {
-    dispatch(todolistsThunks.changeTodolistTitle({ id, title }));
+  const changeTodolistTitleCallback = useCallback(function (id: string, title: string) {
+    changeTodolistTitle({ id, title });
   }, []);
 
-  const addTodolist = useCallback(
-    (title: string) => {
-      dispatch(todolistsThunks.addTodolist(title));
-    },
-    [dispatch],
-  );
+  const addTodolistCallback = useCallback((title: string) => {
+    addTodolist(title);
+  }, []);
 
   if (!isLoggedIn) {
     return <Navigate to={"/login"} />;
@@ -68,7 +67,7 @@ export const TodolistsList = () => {
   return (
     <>
       <Grid container style={{ padding: "20px" }}>
-        <AddItemForm addItem={addTodolist} />
+        <AddItemForm addItem={addTodolistCallback} />
       </Grid>
       <Grid container spacing={3}>
         {todolists.map((tl) => {
@@ -80,13 +79,13 @@ export const TodolistsList = () => {
                 <Todolist
                   todolist={tl}
                   tasks={allTodolistTasks}
-                  removeTask={removeTask}
-                  changeFilter={changeFilter}
-                  addTask={addTask}
-                  changeTaskStatus={changeStatus}
-                  removeTodolist={removeTodolist}
-                  changeTaskTitle={changeTaskTitle}
-                  changeTodolistTitle={changeTodolistTitle}
+                  removeTask={removeTaskCallback}
+                  changeFilter={changeFilterCallback}
+                  addTask={addTaskCallback}
+                  changeTaskStatus={changeStatusCallback}
+                  removeTodolist={removeTodolistCallback}
+                  changeTaskTitle={changeTaskTitleCallback}
+                  changeTodolistTitle={changeTodolistTitleCallback}
                 />
               </Paper>
             </Grid>
